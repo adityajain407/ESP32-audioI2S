@@ -3,7 +3,7 @@
  * libhelix_HAACDECODER
  *
  *  Created on: 26.10.2018
- *  Updated on: 09.01.2023
+ *  Updated on: 10.01.2023
  ************************************************************************************/
 
 #include "aac_decoder.h"
