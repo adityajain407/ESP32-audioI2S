@@ -257,6 +257,7 @@ int opusDecodePage3(uint8_t* inbuf, int* bytesLeft, uint32_t segmentLength, shor
                         endband = 21; // assume OPUS_BANDWIDTH_FULLBAND
                         break;
     }
+    silk_setRawParams(1, 2, 20, 16000, 48000);
 
 //    celt_decoder_ctl(CELT_SET_START_BAND_REQUEST, endband);
     if (s_mode == MODE_CELT_ONLY){
@@ -308,13 +309,19 @@ int8_t opus_FramePacking_Code0(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
       |                                                               |
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 */
-    int ret = 0;
+    int32_t ret = 0;
     *bytesLeft -= packetLen;
     s_opusCurrentFilePos += packetLen;
     packetLen--;
     inbuf++;
     ec_dec_init((uint8_t *)inbuf, packetLen);
-    ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
+    if(s_mode == MODE_CELT_ONLY){
+        ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
+    }
+    if(s_mode == MODE_SILK_ONLY){
+        silk_Decode(0, 1, (int16_t*)outbuf, &ret);
+    }
+
     if(ret < 0) return ret;
     s_opusValidSamples = ret;
     return ERR_OPUS_NONE;
@@ -684,8 +691,8 @@ int8_t parseOpusTOC(uint8_t TOC_Byte){  // https://www.rfc-editor.org/rfc/rfc671
     s_opusCountCode = c;
     s_f_opusStereoFlag = s;
 
-    if(configNr < 12) return ERR_OPUS_SILK_MODE_UNSUPPORTED;
-    if(configNr < 16) return ERR_OPUS_HYBRID_MODE_UNSUPPORTED;
+    // if(configNr < 12) return ERR_OPUS_SILK_MODE_UNSUPPORTED;
+    // if(configNr < 16) return ERR_OPUS_HYBRID_MODE_UNSUPPORTED;
     // if(configNr < 20) return ERR_OPUS_NARROW_BAND_UNSUPPORTED;
     // if(configNr < 24) return ERR_OPUS_WIDE_BAND_UNSUPPORTED;
     // if(configNr < 28) return ERR_OPUS_SUPER_WIDE_BAND_UNSUPPORTED;
