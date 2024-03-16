@@ -257,14 +257,13 @@ int opusDecodePage3(uint8_t* inbuf, int* bytesLeft, uint32_t segmentLength, shor
                         endband = 21; // assume OPUS_BANDWIDTH_FULLBAND
                         break;
     }
-    silk_setRawParams(1, 2, 20, 16000, 48000);
 
 //    celt_decoder_ctl(CELT_SET_START_BAND_REQUEST, endband);
     if (s_mode == MODE_CELT_ONLY){
         celt_decoder_ctl(CELT_SET_END_BAND_REQUEST, endband);
     }
     else if(s_mode == MODE_SILK_ONLY){
-        // silk_InitDecoder();
+        silk_InitDecoder();
     }
 
     samplesPerFrame = opus_packet_get_samples_per_frame(inbuf, s_opusSamplerate);
@@ -315,12 +314,17 @@ int8_t opus_FramePacking_Code0(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     packetLen--;
     inbuf++;
     ec_dec_init((uint8_t *)inbuf, packetLen);
+    if(s_mode == MODE_SILK_ONLY){
+        silk_setRawParams(1, 2, 20, 16000, 48000);
+        silk_Decode(0, 1, (int16_t*)outbuf, &ret);
+    }
+    if(s_mode == MODE_HYBRID){
+        log_i("hybrid");
+    }
     if(s_mode == MODE_CELT_ONLY){
         ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
     }
-    if(s_mode == MODE_SILK_ONLY){
-        silk_Decode(0, 1, (int16_t*)outbuf, &ret);
-    }
+
 
     if(ret < 0) return ret;
     s_opusValidSamples = ret;
@@ -364,13 +368,21 @@ int8_t opus_FramePacking_Code1(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     }
     if(*frameCount > 0){
         ec_dec_init((uint8_t *)inbuf, c1fs);
-        ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
-        if(ret < 0){
-            return ret;
+        if(s_mode == MODE_SILK_ONLY){
+            log_i("silk only");
         }
-        s_opusValidSamples = ret;
-        *bytesLeft -= c1fs;
-        s_opusCurrentFilePos += c1fs;
+        if(s_mode == MODE_HYBRID){
+            log_i("hybrid");
+        }
+        if(s_mode == MODE_CELT_ONLY){
+            ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
+            if(ret < 0){
+                return ret;
+            }
+            s_opusValidSamples = ret;
+            *bytesLeft -= c1fs;
+            s_opusCurrentFilePos += c1fs;
+        }
     }
     *frameCount -= 1;
     return ERR_OPUS_NONE;
@@ -433,19 +445,35 @@ int8_t opus_FramePacking_Code2(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     }
     if(*frameCount == 2){
         ec_dec_init((uint8_t *)inbuf, firstFrameLength);
-        ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
-        if(ret < 0){return ret;}
-        s_opusValidSamples = ret;
-        *bytesLeft -= firstFrameLength;
-        s_opusCurrentFilePos += firstFrameLength;
+        if(s_mode == MODE_SILK_ONLY){
+            log_i("silk only");
+        }
+        if(s_mode == MODE_HYBRID){
+            log_i("hybrid");
+        }
+        if(s_mode == MODE_CELT_ONLY){
+            ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
+            if(ret < 0){return ret;}
+            s_opusValidSamples = ret;
+            *bytesLeft -= firstFrameLength;
+            s_opusCurrentFilePos += firstFrameLength;
+        }
     }
     if(*frameCount == 1){
         ec_dec_init((uint8_t *)inbuf, secondFrameLength);
-        ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
-        if(ret < 0){return ret;}
-        s_opusValidSamples = ret;
-        *bytesLeft -= secondFrameLength;
-        s_opusCurrentFilePos += secondFrameLength;
+        if(s_mode == MODE_SILK_ONLY){
+            log_i("silk only");
+        }
+        if(s_mode == MODE_HYBRID){
+            log_i("hybrid");
+        }
+        if(s_mode == MODE_CELT_ONLY){
+            ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
+            if(ret < 0){return ret;}
+            s_opusValidSamples = ret;
+            *bytesLeft -= secondFrameLength;
+            s_opusCurrentFilePos += secondFrameLength;
+        }
     }
     *frameCount -= 1;
     return ERR_OPUS_NONE;
@@ -581,18 +609,29 @@ int8_t opus_FramePacking_Code3(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     *bytesLeft -= fs;
     s_opusCurrentFilePos += fs;
     ec_dec_init((uint8_t *)inbuf, fs);
-    ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
-    if(ret < 0) return ret; // celt error
-    s_opusValidSamples = ret;
-    *frameCount -= 1;
-    if(*frameCount > 0) return OPUS_CONTINUE;
-    s_opusCountCode = 0;
-    *bytesLeft -= paddingBytes;
-    s_opusCurrentFilePos += paddingBytes;
-    paddingBytes = 0;
-    fs = 0;
-    v = false;
-    p = false;
+    if(s_mode == MODE_SILK_ONLY){
+        log_i("silk only");
+        return ERR_OPUS_SILK_MODE_UNSUPPORTED;
+    }
+    if(s_mode == MODE_HYBRID){
+        log_i("hybrid");
+        return ERR_OPUS_HYBRID_MODE_UNSUPPORTED;
+    }
+    if(s_mode == MODE_CELT_ONLY){
+        ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
+        if(ret < 0) return ret; // celt error
+        s_opusValidSamples = ret;
+        *frameCount -= 1;
+        if(*frameCount > 0) return OPUS_CONTINUE;
+        s_opusCountCode = 0;
+        *bytesLeft -= paddingBytes;
+        s_opusCurrentFilePos += paddingBytes;
+        paddingBytes = 0;
+        fs = 0;
+        v = false;
+        p = false;
+        return ERR_OPUS_NONE;
+    }
     return ERR_OPUS_NONE;
 }
 
