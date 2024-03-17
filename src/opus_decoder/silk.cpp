@@ -22,7 +22,7 @@ silk_decoder       s_decState;
 uint8_t            s_channelsInternal = 0;
 uint8_t            s_payloadSize_ms = 0;
 uint8_t            s_API_channels = 0;
-uint32_t           s_internalSampleRate = 0;
+uint32_t           s_silk_internalSampleRate = 0;
 uint32_t           s_API_sampleRate = 0;
 uint32_t           s_prevPitchLag = 0;
 
@@ -1619,7 +1619,7 @@ void silk_setRawParams(uint8_t channels, uint8_t API_channels, uint8_t payloadSi
     s_channelsInternal = channels;
     s_API_channels = API_channels;
     s_payloadSize_ms = payloadSize_ms;
-    s_internalSampleRate = internalSampleRate;
+    s_silk_internalSampleRate = internalSampleRate;
     s_API_sampleRate = API_samleRate;
 }
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1660,7 +1660,7 @@ int32_t silk_Decode(
     /* If Mono -> Stereo transition in bitstream: init state of second channel */
     if(s_channelsInternal > psDec->nChannelsInternal) { ret += silk_init_decoder(&s_channel_state[1]); }
 
-    stereo_to_mono = s_channelsInternal == 1 && psDec->nChannelsInternal == 2 && (s_internalSampleRate == 1000 * s_channel_state[0].fs_kHz);
+    stereo_to_mono = s_channelsInternal == 1 && psDec->nChannelsInternal == 2 && (s_silk_internalSampleRate == 1000 * s_channel_state[0].fs_kHz);
 
     if(s_channel_state[0].nFramesDecoded == 0) {
         for(n = 0; n < s_channelsInternal; n++) {
@@ -1687,7 +1687,7 @@ int32_t silk_Decode(
                 s_channel_state[n].nb_subfr = 4;
             }
             else { return SILK_DEC_INVALID_FRAME_SIZE; }
-            fs_kHz_dec = (s_internalSampleRate >> 10) + 1;
+            fs_kHz_dec = (s_silk_internalSampleRate >> 10) + 1;
             if(fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16) { return SILK_DEC_INVALID_SAMPLING_FREQUENCY; }
             ret += silk_decoder_set_fs(&s_channel_state[n], fs_kHz_dec, s_API_sampleRate);
         }
@@ -1778,7 +1778,7 @@ int32_t silk_Decode(
     /* Check if the temp buffer fits into the output PCM buffer. If it fits,
        we can delay allocating the temp buffer until after the SILK peak stack
        usage. We need to use a < and not a <= because of the two extra samples. */
-    delay_stack_alloc = s_internalSampleRate * s_channelsInternal < s_API_sampleRate* s_API_channels;
+    delay_stack_alloc = s_silk_internalSampleRate * s_channelsInternal < s_API_sampleRate* s_API_channels;
     ALLOC(samplesOut1_tmp_storage1, delay_stack_alloc ? ALLOC_NONE : s_channelsInternal * (s_channel_state[0].frame_length + 2), int16_t);
 
 

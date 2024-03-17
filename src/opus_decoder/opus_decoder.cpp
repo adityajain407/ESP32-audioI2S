@@ -40,6 +40,7 @@ uint8_t   s_opusPageNr = 0;
 uint8_t   s_frameCount = 0;
 uint16_t  s_opusOggHeaderSize = 0;
 uint16_t  s_bandWidth = 0;
+uint16_t  s_internalSampleRate = 0;
 uint32_t  s_opusSamplerate = 0;
 uint32_t  s_opusSegmentLength = 0;
 uint32_t  s_opusCurrentFilePos = 0;
@@ -102,6 +103,7 @@ void OPUSsetDefaults(){
     s_frameCount = 0;
     s_mode = 0;
     s_opusSamplerate = 0;
+    s_internalSampleRate = 0;
     s_bandWidth = 0;
     s_opusSegmentLength = 0;
     s_opusValidSamples = 0;
@@ -226,14 +228,17 @@ int opusDecodePage3(uint8_t* inbuf, int* bytesLeft, uint32_t segmentLength, shor
         case  0 ... 3:  endband  = 0; // OPUS_BANDWIDTH_SILK_NARROWBAND
                         s_mode = MODE_SILK_ONLY;
                         s_bandWidth = OPUS_BANDWIDTH_NARROWBAND;
+                        s_internalSampleRate = 8000;
                         break;
         case  4 ... 7:  endband  = 0; // OPUS_BANDWIDTH_SILK_MEDIUMBAND
                         s_mode = MODE_SILK_ONLY;
                         s_bandWidth = OPUS_BANDWIDTH_MEDIUMBAND;
+                        s_internalSampleRate = 12000;
                         break;
         case  8 ... 11: endband  = 0; // OPUS_BANDWIDTH_SILK_WIDEBAND
                         s_mode = MODE_SILK_ONLY;
                         s_bandWidth = OPUS_BANDWIDTH_WIDEBAND;
+                        s_internalSampleRate = 16000;
                         break;
         case 12 ... 13: endband  = 0; // OPUS_BANDWIDTH_HYBRID_SUPERWIDEBAND
                         s_mode = MODE_HYBRID;
@@ -255,6 +260,7 @@ int opusDecodePage3(uint8_t* inbuf, int* bytesLeft, uint32_t segmentLength, shor
                         break;
         default:        log_e("unknown bandwidth, configNr is: %d", configNr);
                         endband = 21; // assume OPUS_BANDWIDTH_FULLBAND
+                        s_internalSampleRate = 16000;
                         break;
     }
 
@@ -602,7 +608,7 @@ int8_t opus_FramePacking_Code3(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
         inbuf += paddingLength;
         *frameCount = M;
         if(M == 0) return -1; // div0
-        log_i("packetLen %i,  M %i   FS %i", packetLen, M, packetLen / M);
+    //    log_i("packetLen %i,  M %i   FS %i", packetLen, M, packetLen / M);
 
         fs = (packetLen - paddingBytes) / *frameCount;
     }
