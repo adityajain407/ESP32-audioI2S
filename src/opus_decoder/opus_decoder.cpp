@@ -21,6 +21,12 @@ const uint32_t CELT_SET_START_BAND_REQUEST = 10010;
 const uint32_t CELT_SET_SIGNALLING_REQUEST = 10016;
 const uint32_t CELT_GET_AND_CLEAR_ERROR_REQUEST = 10007;
 
+const uint16_t  s_Fs   = 48000;      // 48000
+const uint16_t  s_F20  = s_Fs / 50;  //   960
+const uint16_t  s_F10  = s_F20 >> 1; //   480
+const uint16_t  s_F5   = s_F10 >> 1; //   240
+const uint16_t  s_F2_5 = s_F5 >> 1;  //   120
+
 enum {OPUS_BANDWIDTH_NARROWBAND = 8000, OPUS_BANDWIDTH_MEDIUMBAND = 12000, OPUS_BANDWIDTH_WIDEBAND = 16000};
 enum {MODE_CELT_ONLY, MODE_SILK_ONLY, MODE_HYBRID};
 
@@ -321,7 +327,8 @@ int8_t opus_FramePacking_Code0(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     inbuf++;
     ec_dec_init((uint8_t *)inbuf, packetLen);
     if(s_mode == MODE_SILK_ONLY){
-        silk_setRawParams(1, 2, 20, 16000, 48000);
+        int payloadSize_ms = max(10, 1000 * samplesPerFrame / 48000);
+        silk_setRawParams(1, 2, payloadSize_ms, s_internalSampleRate, 48000);
         silk_Decode(0, 1, (int16_t*)outbuf, &ret);
     }
     if(s_mode == MODE_HYBRID){
