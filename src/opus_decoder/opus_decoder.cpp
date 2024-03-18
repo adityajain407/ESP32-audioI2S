@@ -326,13 +326,10 @@ int8_t opus_FramePacking_Code0(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     packetLen--;
     inbuf++;
     ec_dec_init((uint8_t *)inbuf, packetLen);
-    if(s_mode == MODE_SILK_ONLY){
+    if(s_mode == MODE_SILK_ONLY || s_mode == MODE_HYBRID){
         int payloadSize_ms = max(10, 1000 * samplesPerFrame / 48000);
         silk_setRawParams(1, 2, payloadSize_ms, s_internalSampleRate, 48000);
         silk_Decode(0, 1, (int16_t*)outbuf, &ret);
-    }
-    if(s_mode == MODE_HYBRID){
-        log_i("hybrid");
     }
     if(s_mode == MODE_CELT_ONLY){
         ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
@@ -368,7 +365,7 @@ int8_t opus_FramePacking_Code1(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
 */
 
 
-    int ret = 0;
+    int32_t ret = 0;
     static uint16_t c1fs = 0;
     if(*frameCount == 0){
         packetLen--;
@@ -381,11 +378,10 @@ int8_t opus_FramePacking_Code1(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     }
     if(*frameCount > 0){
         ec_dec_init((uint8_t *)inbuf, c1fs);
-        if(s_mode == MODE_SILK_ONLY){
-            log_i("silk only");
-        }
-        if(s_mode == MODE_HYBRID){
-            log_i("hybrid");
+        if(s_mode == MODE_SILK_ONLY || s_mode == MODE_HYBRID){
+            int payloadSize_ms = max(10, 1000 * samplesPerFrame / 48000);
+            silk_setRawParams(1, 2, payloadSize_ms, s_internalSampleRate, 48000);
+            silk_Decode(0, 1, (int16_t*)outbuf, &ret);
         }
         if(s_mode == MODE_CELT_ONLY){
             ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
@@ -432,7 +428,7 @@ int8_t opus_FramePacking_Code2(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
 */
 
 //  log_w("OPUS countCode 2 packetLen %i", packetLen);
-    int ret = 0;
+    int32_t ret = 0;
     static uint16_t firstFrameLength = 0;
     static uint16_t secondFrameLength = 0;
 
@@ -458,11 +454,10 @@ int8_t opus_FramePacking_Code2(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     }
     if(*frameCount == 2){
         ec_dec_init((uint8_t *)inbuf, firstFrameLength);
-        if(s_mode == MODE_SILK_ONLY){
-            log_i("silk only");
-        }
-        if(s_mode == MODE_HYBRID){
-            log_i("hybrid");
+        if(s_mode == MODE_SILK_ONLY || s_mode == MODE_HYBRID){
+            int payloadSize_ms = max(10, 1000 * samplesPerFrame / 48000);
+            silk_setRawParams(1, 2, payloadSize_ms, s_internalSampleRate, 48000);
+            silk_Decode(0, 1, (int16_t*)outbuf, &ret);
         }
         if(s_mode == MODE_CELT_ONLY){
             ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
@@ -474,11 +469,10 @@ int8_t opus_FramePacking_Code2(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     }
     if(*frameCount == 1){
         ec_dec_init((uint8_t *)inbuf, secondFrameLength);
-        if(s_mode == MODE_SILK_ONLY){
-            log_i("silk only");
-        }
-        if(s_mode == MODE_HYBRID){
-            log_i("hybrid");
+        if(s_mode == MODE_SILK_ONLY || s_mode == MODE_HYBRID){
+            int payloadSize_ms = max(10, 1000 * samplesPerFrame / 48000);
+            silk_setRawParams(1, 2, payloadSize_ms, s_internalSampleRate, 48000);
+            silk_Decode(0, 1, (int16_t*)outbuf, &ret);
         }
         if(s_mode == MODE_CELT_ONLY){
             ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
@@ -597,7 +591,7 @@ int8_t opus_FramePacking_Code3(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     static uint8_t M = 0;
     static bool v = false;
     static bool p = false;
-    int ret = 0;
+    int32_t ret = 0;
     uint8_t paddingLength = 0;
     if(*frameCount == 0){
         v = ((inbuf[1] & 0x80) == 0x80);  // VBR indicator
@@ -622,13 +616,10 @@ int8_t opus_FramePacking_Code3(uint8_t *inbuf, int *bytesLeft, short *outbuf, in
     *bytesLeft -= fs;
     s_opusCurrentFilePos += fs;
     ec_dec_init((uint8_t *)inbuf, fs);
-    if(s_mode == MODE_SILK_ONLY){
-        log_i("silk only");
-        return ERR_OPUS_SILK_MODE_UNSUPPORTED;
-    }
-    if(s_mode == MODE_HYBRID){
-        log_i("hybrid");
-        return ERR_OPUS_HYBRID_MODE_UNSUPPORTED;
+    if(s_mode == MODE_SILK_ONLY || s_mode == MODE_HYBRID){
+        int payloadSize_ms = max(10, 1000 * samplesPerFrame / 48000);
+        silk_setRawParams(1, 2, payloadSize_ms, s_internalSampleRate, 48000);
+        silk_Decode(0, 1, (int16_t*)outbuf, &ret);
     }
     if(s_mode == MODE_CELT_ONLY){
         ret = celt_decode_with_ec((int16_t*)outbuf, samplesPerFrame);
